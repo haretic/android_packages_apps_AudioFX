@@ -7,7 +7,9 @@
 package org.lineageos.audiofx.preset;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import androidx.viewpager.widget.PagerAdapter;
@@ -16,6 +18,7 @@ import androidx.viewpager.widget.ViewPager;
 import org.lineageos.audiofx.R;
 import org.lineageos.audiofx.activity.EqualizerManager;
 import org.lineageos.audiofx.activity.MasterConfigControl;
+import org.lineageos.audiofx.widget.WheelGrab;
 
 /**
  * A {@link ViewPager} that allows pseudo-infinite paging with a wrap-around effect. Should be used
@@ -24,6 +27,9 @@ import org.lineageos.audiofx.activity.MasterConfigControl;
 public class InfiniteViewPager extends ViewPager {
 
     private final EqualizerManager mEqManager;
+    /** The wheel UI's side button grabs the presets, the wheel's steps then page through them */
+    private final WheelGrab mWheelGrab = new WheelGrab(this,
+            direction -> setCurrentItemAbsolute(getCurrentItem() + direction, true));
 
     @Override
     public boolean hasOverlappingRendering() {
@@ -73,6 +79,26 @@ public class InfiniteViewPager extends ViewPager {
             result = false;
         }
         return result;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        return getAdapter() != null && !mEqManager.isAnimatingToCustom()
+                && mWheelGrab.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect) {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (!gainFocus) {
+            mWheelGrab.letGo();
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        mWheelGrab.letGo();
+        super.onDetachedFromWindow();
     }
 
     @Override
