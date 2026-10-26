@@ -14,12 +14,14 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
@@ -73,6 +75,14 @@ public class RadialKnob extends View {
 
     private Context mContext;
 
+    /** How long a knob the side button grabbed waits for the wheel before letting go. */
+    private static final long WHEEL_GRAB_TIMEOUT_MS = 4000;
+    /** Steps of the wheel from one end of a grabbed knob to the other. */
+    private static final int WHEEL_GRAB_STEPS = 50;
+    private boolean mWheelGrabbed;
+    private final Runnable mWheelLetGo = () -> setWheelGrabbed(false);
+    private OnWheelGrabListener mOnWheelGrabListener;
+
     public RadialKnob(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         mContext = context;
@@ -103,7 +113,92 @@ public class RadialKnob extends View {
         setScaleY(REGULAR_SCALE);
 
         mRectPadding = res.getDimensionPixelSize(R.dimen.radial_rect_padding);
+        // The wheel UI reaches the knob as the system's sliders, see onKeyDown
+        if (isWheelUi()) {
+            setFocusable(true);
+        }
         invalidate();
+    }
+
+    /** Whether the system runs the wheel UI, where a device's wheel moves the focus. */
+    private boolean isWheelUi() {
+        final Resources res = getResources();
+        final int id = res.getIdentifier("config_wheelFocus", "bool", "android");
+        return id != 0 && res.getBoolean(id);
+    }
+
+    /**
+     * The wheel UI's knobs, as its sliders: the side button's press (Enter) grabs the knob, the
+     * wheel's steps (up and down) then turn it, on from off and off at its start, and a press or
+     * a pause lets it go.
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (!mEnabled || !isWheelUi()) {
+            return super.onKeyDown(keyCode, event);
+        }
+        if (KeyEvent.isConfirmKey(keyCode)) {
+            if (event.getRepeatCount() == 0) {
+                setWheelGrabbed(!mWheelGrabbed);
+            }
+            return true;
+        }
+        if (!mWheelGrabbed
+                || keyCode != KeyEvent.KEYCODE_DPAD_DOWN && keyCode != KeyEvent.KEYCODE_DPAD_UP) {
+            return super.onKeyDown(keyCode, event);
+        }
+        removeCallbacks(mWheelLetGo);
+        postDelayed(mWheelLetGo, WHEEL_GRAB_TIMEOUT_MS);
+        final float step = (keyCode == KeyEvent.KEYCODE_DPAD_DOWN ? 1f : -1f) / WHEEL_GRAB_STEPS;
+        final float from = mOn ? mProgress : 0f;
+        final float to = Math.max(0f, Math.min(1f, from + step));
+        if (to == from) {
+            return true;
+        }
+        if (mAnimator != null) {
+            mAnimator.cancel();
+        }
+        if (!mOn && to > 0f || mOn && to == 0f) {
+            if (mOnKnobChangeListener != null) {
+                mOnKnobChangeListener.onSwitchChanged(this, !mOn);
+            }
+            setOn(!mOn);
+        }
+        setProgress(to, true);
+        mTouchProgress = mProgress;
+        mLastAngle = mProgress * MAX_DEGREES;
+        return true;
+    }
+
+    private void setWheelGrabbed(boolean grabbed) {
+        removeCallbacks(mWheelLetGo);
+        if (grabbed == mWheelGrabbed) {
+            return;
+        }
+        mWheelGrabbed = grabbed;
+        // The wheel's ring shows it holds the knob, as on the system's sliders
+        setPressed(grabbed);
+        if (grabbed) {
+            postDelayed(mWheelLetGo, WHEEL_GRAB_TIMEOUT_MS);
+        }
+        if (mOnWheelGrabListener != null) {
+            mOnWheelGrabListener.onWheelGrabChanged(this, grabbed);
+        }
+    }
+
+    @Override
+    protected void onFocusChanged(boolean gainFocus, int direction,
+            Rect previouslyFocusedRect) {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (!gainFocus) {
+            setWheelGrabbed(false);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        setWheelGrabbed(false);
+        super.onDetachedFromWindow();
     }
 
     public RadialKnob(Context context, AttributeSet attrs) {
@@ -501,6 +596,15 @@ public class RadialKnob extends View {
 
     public void setOnKnobChangeListener(OnKnobChangeListener l) {
         mOnKnobChangeListener = l;
+    }
+
+    public void setOnWheelGrabListener(OnWheelGrabListener l) {
+        mOnWheelGrabListener = l;
+    }
+
+    /** The wheel UI grabbed the knob, as a touch on it, or let it go. */
+    public interface OnWheelGrabListener {
+        void onWheelGrabChanged(RadialKnob knob, boolean grabbed);
     }
 
     public interface OnKnobChangeListener {

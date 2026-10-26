@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -113,11 +114,29 @@ public class KnobContainer extends LinearLayout
             return false;
         };
 
+        // The wheel UI's side button on a knob: grows it as a touch does, or says why not
+        OnKeyListener knobKeyListener = (v, keyCode, event) -> {
+            if (!v.isEnabled() && KeyEvent.isConfirmKey(keyCode)) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                    notifyDisabled();
+                }
+                return true;
+            }
+            return false;
+        };
+        RadialKnob.OnWheelGrabListener knobGrabListener = (knob, grabbed) -> {
+            mHandler.removeMessages(MSG_EXPAND);
+            mHandler.obtainMessage(grabbed ? MSG_EXPAND : MSG_CONTRACT, knob.getTag())
+                    .sendToTarget();
+        };
+
         if (mBassContainer != null) {
             mBassKnob = mBassContainer.findViewById(R.id.knob);
             mBassKnob.setTag(new KnobInfo(KnobCommander.KNOB_BASS, mBassKnob,
                     mBassContainer.findViewById(R.id.label)));
             mBassKnob.setOnTouchListener(knobTouchListener);
+            mBassKnob.setOnKeyListener(knobKeyListener);
+            mBassKnob.setOnWheelGrabListener(knobGrabListener);
             mBassKnob.setOnKnobChangeListener(
                     KnobCommander.getInstance(getContext()).getRadialKnobCallback(
                             KnobCommander.KNOB_BASS
@@ -132,6 +151,8 @@ public class KnobContainer extends LinearLayout
             mVirtualizerKnob.setTag(new KnobInfo(KnobCommander.KNOB_VIRTUALIZER, mVirtualizerKnob,
                     mVirtualizerContainer.findViewById(R.id.label)));
             mVirtualizerKnob.setOnTouchListener(knobTouchListener);
+            mVirtualizerKnob.setOnKeyListener(knobKeyListener);
+            mVirtualizerKnob.setOnWheelGrabListener(knobGrabListener);
             mVirtualizerKnob.setOnKnobChangeListener(
                     KnobCommander.getInstance(getContext()).getRadialKnobCallback(
                             KnobCommander.KNOB_VIRTUALIZER
