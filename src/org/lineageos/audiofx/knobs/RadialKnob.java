@@ -274,6 +274,16 @@ public class RadialKnob extends View {
         }
     }
 
+    /** As tall as wide: the knob is round, the wheel's focus ring round it too, above its label. */
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY) {
+            final int side = Math.min(getMeasuredWidth(), getMeasuredHeight());
+            setMeasuredDimension(getMeasuredWidth(), side);
+        }
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldW, int oldH) {
         super.onSizeChanged(w, h, oldW, oldH);
