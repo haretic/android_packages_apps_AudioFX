@@ -57,7 +57,8 @@ public class InfiniteViewPager extends ViewPager {
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int textSize = getResources().getDimensionPixelSize(R.dimen.preset_text_size)
-                + getResources().getDimensionPixelSize(R.dimen.preset_text_padding);
+                + getResources().getDimensionPixelSize(R.dimen.preset_text_padding)
+                + 2 * getResources().getDimensionPixelSize(R.dimen.preset_text_padding_vertical);
         super.onMeasure(widthMeasureSpec,
                 MeasureSpec.makeMeasureSpec(textSize, MeasureSpec.EXACTLY));
     }
