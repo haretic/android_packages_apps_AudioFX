@@ -24,6 +24,7 @@
                 android:id="@+id/pager"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/preset_pager_margin"
         />
 
         <org.lineageos.audiofx.viewpagerindicator.CirclePageIndicator
