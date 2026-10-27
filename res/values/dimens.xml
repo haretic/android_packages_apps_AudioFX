@@ -28,7 +28,7 @@
     <dimen name="separator_width">4dp</dimen>
 
     <dimen name="knob_width">100dp</dimen>
-    <dimen name="knob_container_padding_bottom">8dp</dimen>
+    <dimen name="knob_container_padding_bottom">4dp</dimen>
 
     <dimen name="radial_rect_padding">11dp</dimen>
     <dimen name="radial_text_size">18sp</dimen>

@@ -287,6 +287,9 @@ public class RadialKnob extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldW, int oldH) {
         super.onSizeChanged(w, h, oldW, oldH);
+        // Scaled down from its top, so the label under it stays clear of it and its focus ring
+        setPivotX(w / 2f);
+        setPivotY(0);
 
         mWidth = Math.min(w, h);
         int diff;
