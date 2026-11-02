@@ -226,6 +226,9 @@ public class RadialKnob extends View {
     @Override
     public void setEnabled(boolean enabled) {
         mEnabled = enabled;
+        // The view's own state too: a disabled knob, reading "--" as its effect doesn't apply
+        // to the output, no stop for the wheel
+        super.setEnabled(enabled);
         if (enabled) {
             setOn(mOn);
         }
