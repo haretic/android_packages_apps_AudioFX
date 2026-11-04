@@ -8,7 +8,7 @@ package org.lineageos.audiofx.widget;
 import android.content.res.Resources;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Toast;
+import android.widget.WheelCue;
 
 /**
  * The wheel UI's hold on a control, as the system's sliders have: the side button's press (Enter)
@@ -83,12 +83,12 @@ public final class WheelGrab {
         mView.setPressed(grabbed);
         if (grabbed) {
             mView.postDelayed(mLetGo, TIMEOUT_MS);
-            // The system sliders' own guidance, word for word
+            // The system sliders' own cue beside the wheel, word for word
             final Resources res = mView.getResources();
-            final int hint = res.getIdentifier("wheel_slider_grabbed", "string", "android");
-            if (hint != 0) {
-                Toast.makeText(mView.getContext(), hint, Toast.LENGTH_SHORT).show();
-            }
+            WheelCue.show(mView, res.getIdentifier("wheel_cue_set", "string", "android"),
+                    res.getIdentifier("wheel_cue_let_go", "string", "android"));
+        } else {
+            WheelCue.hide();
         }
         mTarget.onWheelGrabChanged(grabbed);
     }
